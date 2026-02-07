@@ -9,9 +9,9 @@ pub struct DirNode {
 }
 
 impl DirNode {
-    pub fn with_path(path: PathBuf) -> Self {
+    pub fn with_path<T: Into<PathBuf>>(path: T) -> Self {
         Self {
-            path,
+            path: path.into(),
             sub_dirs: vec![],
             files: vec![],
         }
