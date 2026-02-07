@@ -78,7 +78,7 @@ impl Swdir {
 
         // 2. サブディレクトリを並列処理で再帰的にスキャン
         // `par_iter` を使うことで、ブランチごとに別スレッドで処理が走ります
-        let sub_dirs = if let Some(sub_dir_paths) = &sub_dir_paths {
+        let mut sub_dirs = if let Some(sub_dir_paths) = &sub_dir_paths {
             sub_dir_paths
                 .into_par_iter()
                 .map(|path| {
@@ -95,6 +95,8 @@ impl Swdir {
             Vec::new()
         };
 
+        sub_dirs.sort();
+        files.sort();
         // return
         DirNode {
             path: dir_path.to_path_buf(),

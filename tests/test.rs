@@ -14,9 +14,9 @@ fn scan_not_recurse() {
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
-            PathBuf::from("tests/fixtures/test.txt"),
-            PathBuf::from("tests/fixtures/test.md"),
             PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
         ]
     );
 }
@@ -33,9 +33,9 @@ fn scan_recurse_depth_limit_0() {
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
-            PathBuf::from("tests/fixtures/test.txt"),
-            PathBuf::from("tests/fixtures/test.md"),
             PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
         ]
     );
 }
@@ -52,9 +52,9 @@ fn scan_recurse_depth_limit_1() {
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
-            PathBuf::from("tests/fixtures/test.txt"),
-            PathBuf::from("tests/fixtures/test.md"),
             PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
         ]
     );
     assert_eq!(
@@ -86,8 +86,8 @@ fn scan_with_denylist() {
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
-            PathBuf::from("tests/fixtures/test.txt"),
             PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.txt"),
         ]
     );
 }
