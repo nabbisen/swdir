@@ -30,11 +30,12 @@ impl Swdir {
     fn scan_node(&self, dir_path: &Path, is_recurse: bool, depth_limit: Option<usize>) -> DirNode {
         let mut files = Vec::new();
         // scan sud directories only when resurse is true and depth_limit has capacity
-        let mut sub_dir_paths = if is_recurse && depth_limit.is_some_and(|x| 1 <= x) {
-            Some(Vec::new())
-        } else {
-            None
-        };
+        let mut sub_dir_paths =
+            if is_recurse && (depth_limit.is_none() || depth_limit.is_some_and(|x| 1 <= x)) {
+                Some(Vec::new())
+            } else {
+                None
+            };
 
         // 1. 現在のディレクトリを読み込む (I/O)
         // エラー時は空の結果として扱い、ログだけ出す実装にしています
