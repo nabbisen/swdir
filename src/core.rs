@@ -14,11 +14,11 @@ const MAX_THREADS: usize = 8;
 
 #[derive(Clone)]
 pub struct Swdir {
-    pub root_path: PathBuf,
-    pub max_threads: usize,
-    pub recurse: Recurse,
-    pub whitelist_exts: Option<Vec<String>>,
-    pub blacklist_exts: Option<Vec<String>>,
+    root_path: PathBuf,
+    max_threads: usize,
+    recurse: Recurse,
+    extension_allowlist: Option<Vec<String>>,
+    extension_denylist: Option<Vec<String>>,
 }
 
 #[derive(Clone, Default)]
@@ -38,14 +38,28 @@ impl Swdir {
         self.to_owned()
     }
 
-    pub fn set_whitelist_exts(&mut self, list: Vec<String>) -> Self {
-        self.whitelist_exts = Some(list);
-        self.to_owned()
+    pub fn set_extension_allowlist<T: Into<String> + Clone>(
+        &mut self,
+        list: &[T],
+    ) -> Result<Self, String> {
+        let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
+        if let Err(err) = validate_list_extensions(&list, self.extension_denylist.as_ref()) {
+            return Err(err);
+        }
+        self.extension_allowlist = Some(list);
+        Ok(self.to_owned())
     }
 
-    pub fn set_blacklist_exts(&mut self, list: Vec<String>) -> Self {
-        self.blacklist_exts = Some(list);
-        self.to_owned()
+    pub fn set_extension_denylist<T: Into<String> + Clone>(
+        &mut self,
+        list: &[T],
+    ) -> Result<Self, String> {
+        let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
+        if let Err(err) = validate_list_extensions(&list, self.extension_allowlist.as_ref()) {
+            return Err(err);
+        }
+        self.extension_denylist = Some(list);
+        Ok(self.to_owned())
     }
 
     pub fn scan(&self) -> DirNode {
@@ -59,8 +73,23 @@ impl Swdir {
             root_path: PathBuf::from("."),
             max_threads: MAX_THREADS,
             recurse: Recurse::default(),
-            whitelist_exts: None,
-            blacklist_exts: None,
+            extension_allowlist: None,
+            extension_denylist: None,
         }
     }
+}
+
+fn validate_list_extensions(
+    list: &Vec<String>,
+    reference: Option<&Vec<String>>,
+) -> Result<(), String> {
+    for x in list {
+        if x.starts_with(".") {
+            return Err(format!("Should not start with \".\": {}", x));
+        }
+    }
+    if reference.is_some() {
+        return Err("Cannot specify both allowlist and denylist. Please choose one".to_owned());
+    }
+    Ok(())
 }

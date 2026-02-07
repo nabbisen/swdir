@@ -41,15 +41,38 @@ impl Swdir {
         if let Ok(entries) = fs::read_dir(dir_path) {
             for entry in entries.filter_map(Result::ok) {
                 let path = entry.path();
+
                 if path.is_dir() {
                     if let Some(sub_dir_paths) = sub_dir_paths.as_mut() {
                         sub_dir_paths.push(path);
                     }
+                    continue;
+                }
+
+                let should_push = if let Some(extension_allowlist) = &self.extension_allowlist {
+                    if let Some(extension) = path.extension() {
+                        let extension = extension.to_string_lossy();
+                        extension_allowlist.iter().any(|x| **x == extension)
+                    } else {
+                        false
+                    }
+                } else if let Some(extension_denylist) = &self.extension_denylist {
+                    if let Some(extension) = path.extension() {
+                        let extension = extension.to_string_lossy();
+                        extension_denylist.iter().all(|x| **x != extension)
+                    } else {
+                        true
+                    }
                 } else {
+                    true
+                };
+
+                if should_push {
                     files.push(path);
                 }
             }
         } else {
+            // todo: error handling
             eprintln!("⚠️ Access denied or error: {}", dir_path.display());
         }
 
