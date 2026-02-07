@@ -7,3 +7,9 @@
 
 Swiftly traverse and scan directories recursively.
 Sway 💃, swing 🎷 or swim 🪼 in directories.
+
+```rust
+use swdir::Swdir;
+
+let dir_node = Swdir::default().set_root_path("/some/path").scan(); // -> DirNode
+```

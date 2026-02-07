@@ -1,14 +1,14 @@
 [package]
 name = "swdir"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 description = "Swiftly traverse and scan directories recursively. Sway 💃, swing 🎷 or swim 🪼 in directories."
 authors = ["nabbisen <nabbisen@scqr.net>"]
 license = "Apache-2.0"
 
-categories = []
-keywords = []
+categories = ["filesystem"]
+keywords = ["filesystem", "walk", "iterator", "concurrency", "filter"]
 repository = "https://github.com/nabbisen/swdir"
 readme = "README.md"
 rust-version = "1.87.0"

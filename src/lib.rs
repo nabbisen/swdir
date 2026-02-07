@@ -1,32 +1,108 @@
-use std::path::Path;
-
-use crate::dir_node::DirNode;
+/// ```rust
+/// use swdir::Swdir;
+///
+/// let dir_node = Swdir::default().set_root_path("/some/path").scan(); // -> DirNode
+/// ```
+use std::path::PathBuf;
 
 pub mod dir_node;
+mod util;
 
-pub fn scan() -> DirNode {
-    let max_threads: usize = 8; // 環境に合わせて調整
-    let it = dir_node::DirNode::new(Path::new(".").as_ref()).build_tree_parallel(max_threads);
-    it
+use dir_node::DirNode;
 
-    // // 並列に処理したいときは `for_each` などの ParallelIterator メソッドを使う
-    // it.clone().for_each(|p| {
-    //     // ここは Rayon のスレッドプール上で実行されます
-    //     println!("{}", p.display());
-    // });
+const MAX_THREADS: usize = 8;
 
-    // // 同期的にベクタが欲しいときは `collect` すれば OK
-    // let all: Vec<_> = it.collect();
-    // println!("found {} entries", all.len());
+#[derive(Clone)]
+pub struct Swdir {
+    pub root_path: PathBuf,
+    pub max_threads: usize,
+    pub recurse: Recurse,
+    // pub whitelist_exts: Option<Vec<String>>,
+    // pub blacklist_exts: Option<Vec<String>>,
+}
+
+#[derive(Clone, Default)]
+pub struct Recurse {
+    pub is_recurse: bool,
+    pub depth_limit: Option<usize>,
+}
+
+impl Swdir {
+    pub fn set_root_path<T: Into<PathBuf>>(&mut self, path: T) -> Self {
+        self.root_path = path.into();
+        self.to_owned()
+    }
+
+    pub fn set_recurse(&mut self, recurse: Recurse) -> Self {
+        self.recurse = recurse;
+        self.to_owned()
+    }
+
+    // pub fn set_whitelist_exts(&mut self, list: Vec<String>) -> Self {
+    //     self.whitelist_exts = Some(list);
+    //     self.to_owned()
+    // }
+
+    // pub fn set_blacklist_exts(&mut self, list: Vec<String>) -> Self {
+    //     self.blacklist_exts = Some(list);
+    //     self.to_owned()
+    // }
+
+    pub fn scan(&self) -> DirNode {
+        self.scan_parallel()
+    }
+}
+
+impl Swdir {
+    pub fn default() -> Self {
+        Self {
+            root_path: PathBuf::from("."),
+            max_threads: MAX_THREADS,
+            recurse: Recurse::default(),
+            // whitelist_exts: None,
+            // blacklist_exts: None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::{Recurse, Swdir};
 
     #[test]
     fn it_works() {
-        let result = scan();
+        let result = Swdir::default().set_root_path(".").scan();
         assert_eq!(result.path, std::path::Path::new(".").to_path_buf());
+    }
+
+    #[test]
+    fn print_not_recurse() {
+        let result = Swdir::default().scan();
+        println!("{:?}", result);
+        ()
+    }
+
+    #[test]
+    fn print_recurse_depth_limit_0() {
+        let result = Swdir::default()
+            .set_recurse(Recurse {
+                is_recurse: true,
+                depth_limit: Some(0),
+            })
+            .scan();
+        println!("{:?}", result);
+        ()
+    }
+
+    #[test]
+    fn print_recurse_depth_limit_1() {
+        let result = Swdir::default()
+            .set_recurse(Recurse {
+                is_recurse: true,
+                depth_limit: Some(1),
+            })
+            .scan();
+        println!("{:?}", result);
+        ()
     }
 }
