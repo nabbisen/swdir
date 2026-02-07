@@ -1,0 +1,29 @@
+[package]
+name = "swdir"
+version = "0.1.0"
+edition = "2024"
+
+description = "Swiftly traverse and scan directories recursively. Sway 💃, swing 🎷 or swim 🪼 in directories."
+authors = ["nabbisen <nabbisen@scqr.net>"]
+license = "Apache-2.0"
+
+categories = []
+keywords = []
+repository = "https://github.com/nabbisen/swdir"
+readme = "README.md"
+rust-version = "1.87.0"
+
+[profile.release]     # shrink executable size
+opt-level = "z"
+lto = true
+# panic = "abort"
+strip = true
+codegen-units = 1
+
+[profile.dev]         # to improve productivity
+opt-level = 1         # slightly optimize
+lto = false           # disable link-time optimizations
+incremental = false
+
+[dependencies]
+rayon = "1"
