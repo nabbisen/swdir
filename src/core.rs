@@ -5,10 +5,11 @@
 /// ```
 use std::path::PathBuf;
 
-pub mod dir_node;
-mod util;
+mod scan;
 
-use dir_node::DirNode;
+use crate::helpers::dir_node::DirNode;
+use crate::helpers::recurse::Recurse;
+use crate::helpers::validate::validate_list_extensions;
 
 const MAX_THREADS: usize = 8;
 
@@ -19,12 +20,6 @@ pub struct Swdir {
     recurse: Recurse,
     extension_allowlist: Option<Vec<String>>,
     extension_denylist: Option<Vec<String>>,
-}
-
-#[derive(Clone, Default)]
-pub struct Recurse {
-    pub is_recurse: bool,
-    pub depth_limit: Option<usize>,
 }
 
 impl Swdir {
@@ -77,19 +72,4 @@ impl Swdir {
             extension_denylist: None,
         }
     }
-}
-
-fn validate_list_extensions(
-    list: &Vec<String>,
-    reference: Option<&Vec<String>>,
-) -> Result<(), String> {
-    for x in list {
-        if x.starts_with(".") {
-            return Err(format!("Should not start with \".\": {}", x));
-        }
-    }
-    if reference.is_some() {
-        return Err("Cannot specify both allowlist and denylist. Please choose one".to_owned());
-    }
-    Ok(())
 }

@@ -22,11 +22,65 @@ fn scan_not_recurse() {
 }
 
 #[test]
+fn scan_with_skip_hidden() {
+    let result = Swdir::default()
+        .set_root_path("tests/fixtures")
+        .set_recurse(Recurse {
+            enabled: true,
+            skip_hidden: true,
+            depth_limit: Some(1),
+        })
+        .scan();
+    assert_eq!(
+        result.files.as_array().unwrap(),
+        &[
+            PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
+        ]
+    );
+    assert_eq!(
+        result.sub_dirs[0].files.as_array().unwrap(),
+        &[PathBuf::from("tests/fixtures/subdir/subdir.txt"),]
+    );
+}
+
+#[test]
+fn scan_without_skip_hidden() {
+    let result = Swdir::default()
+        .set_root_path("tests/fixtures")
+        .set_recurse(Recurse {
+            enabled: true,
+            skip_hidden: false,
+            depth_limit: Some(1),
+        })
+        .scan();
+    assert_eq!(
+        result.files.as_array().unwrap(),
+        &[
+            PathBuf::from("tests/fixtures/.hidden-file"),
+            PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
+        ]
+    );
+    assert_eq!(
+        result.sub_dirs[0].files.as_array().unwrap(),
+        &[PathBuf::from("tests/fixtures/.hidden-dir/dummy"),]
+    );
+    assert_eq!(
+        result.sub_dirs[1].files.as_array().unwrap(),
+        &[PathBuf::from("tests/fixtures/subdir/subdir.txt"),]
+    );
+}
+
+#[test]
 fn scan_recurse_depth_limit_0() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
-            is_recurse: true,
+            enabled: true,
+            skip_hidden: true,
             depth_limit: Some(0),
         })
         .scan();
@@ -45,7 +99,8 @@ fn scan_recurse_depth_limit_1() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
-            is_recurse: true,
+            enabled: true,
+            skip_hidden: true,
             depth_limit: Some(1),
         })
         .scan();
