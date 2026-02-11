@@ -58,6 +58,17 @@ impl Swdir {
         for entry in entries.filter_map(Result::ok) {
             let path = entry.path();
 
+            if self.recurse.skip_hidden && is_hidden(&entry) {
+                continue;
+            }
+
+            if path.is_dir() {
+                if let Some(sub_dir_paths) = sub_dir_paths.as_mut() {
+                    sub_dir_paths.push(path);
+                }
+                continue;
+            }
+
             let should_push = if let Some(extension_allowlist) = &self.extension_allowlist {
                 if let Some(extension) = path.extension() {
                     let extension = extension.to_string_lossy();
@@ -73,17 +84,11 @@ impl Swdir {
                     !(self.recurse.skip_hidden && is_hidden(&entry))
                 }
             } else {
-                !(self.recurse.skip_hidden && is_hidden(&entry))
+                true
             };
 
             if should_push {
-                if path.is_dir() {
-                    if let Some(sub_dir_paths) = sub_dir_paths.as_mut() {
-                        sub_dir_paths.push(path);
-                    }
-                } else {
-                    files.push(path);
-                }
+                files.push(path);
             }
         }
 
