@@ -11,6 +11,10 @@ Sway 💃, swing 🎷 or swim 🪼 in directories.
 
 ## Quick start
 
+```sh
+cargo install swdir
+```
+
 ```rust
 use swdir::Swdir;
 

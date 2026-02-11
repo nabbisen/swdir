@@ -1,5 +1,9 @@
 /// ## Quick start
 ///
+/// ```sh
+/// cargo install swdir
+/// ```
+///
 /// ```rust
 /// use swdir::Swdir;
 ///
