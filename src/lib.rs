@@ -37,7 +37,7 @@
 ///
 /// let dir_node_with_denylist = Swdir::default()
 ///     .set_root_path("/some/path")
-///     .set_extension_allowlist(&["md"])
+///     .set_extension_denylist(&["md"])
 ///     .unwrap()
 ///     .scan();
 /// ```
