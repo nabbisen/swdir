@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/github/license/nabbisen/swdir)](https://github.com/nabbisen/swdir/blob/main/LICENSE)
 
 Swiftly traverse and scan directories recursively.
-Sway 💃, swing 🎷 or swim 🪼 in directories.
+Sway 🪭, swing 🎷 or swim 🪼 in directories.
 
 ## Quick start
 
