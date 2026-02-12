@@ -16,10 +16,11 @@ const MAX_THREADS: usize = 8;
 #[derive(Clone)]
 pub struct Swdir {
     root_path: PathBuf,
-    max_threads: usize,
     recurse: Recurse,
+    skip_hidden: bool,
     extension_allowlist: Option<Vec<String>>,
     extension_denylist: Option<Vec<String>>,
+    max_threads: usize,
 }
 
 impl Swdir {
@@ -30,6 +31,11 @@ impl Swdir {
 
     pub fn set_recurse(&mut self, recurse: Recurse) -> Self {
         self.recurse = recurse;
+        self.to_owned()
+    }
+
+    pub fn disable_skip_hidden(&mut self) -> Self {
+        self.skip_hidden = false;
         self.to_owned()
     }
 
@@ -68,6 +74,7 @@ impl Swdir {
             root_path: PathBuf::from("."),
             max_threads: MAX_THREADS,
             recurse: Recurse::default(),
+            skip_hidden: true,
             extension_allowlist: None,
             extension_denylist: None,
         }

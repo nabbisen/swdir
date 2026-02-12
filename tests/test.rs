@@ -27,7 +27,6 @@ fn scan_with_skip_hidden() {
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
             enabled: true,
-            skip_hidden: true,
             depth_limit: Some(1),
         })
         .scan();
@@ -51,9 +50,9 @@ fn scan_without_skip_hidden() {
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
             enabled: true,
-            skip_hidden: false,
             depth_limit: Some(1),
         })
+        .disable_skip_hidden()
         .scan();
     assert_eq!(
         result.files.as_array().unwrap(),
@@ -80,7 +79,6 @@ fn scan_recurse_depth_limit_0() {
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
             enabled: true,
-            skip_hidden: true,
             depth_limit: Some(0),
         })
         .scan();
@@ -100,7 +98,6 @@ fn scan_recurse_depth_limit_1() {
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
             enabled: true,
-            skip_hidden: true,
             depth_limit: Some(1),
         })
         .scan();
