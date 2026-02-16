@@ -21,6 +21,7 @@ use swdir::Swdir;
 fn run() {
     let dir_node = Swdir::default().set_root_path("/some/path").scan();
     // -> DirNode (files and subdirectories)
+    //     -> flatten_paths() returns Vec<PathBuf>
 }
 ```
 

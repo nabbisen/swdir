@@ -1,3 +1,6 @@
+/// validate:
+/// - extension items in allowlist / denylist don't start with period
+/// - both allowlist / denylist are specified
 pub fn validate_list_extensions(
     list: &Vec<String>,
     reference: Option<&Vec<String>>,

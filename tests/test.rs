@@ -173,3 +173,38 @@ fn err_denylist_start_with_period() {
     let result = Swdir::default().set_extension_denylist(&[".txt"]);
     assert!(result.is_err());
 }
+
+#[test]
+fn dir_node_flatten_paths_not_recurse_ok() {
+    let dir_node = Swdir::default().set_root_path("tests/fixtures").scan();
+    let flatten_paths = dir_node.flatten_paths();
+    assert_eq!(
+        flatten_paths,
+        vec![
+            PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
+        ]
+    );
+}
+
+#[test]
+fn dir_node_flatten_paths_recurse_ok() {
+    let dir_node = Swdir::default()
+        .set_root_path("tests/fixtures")
+        .set_recurse(Recurse {
+            enabled: true,
+            depth_limit: Some(1),
+        })
+        .scan();
+    let flatten_paths = dir_node.flatten_paths();
+    assert_eq!(
+        flatten_paths,
+        vec![
+            PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
+            PathBuf::from("tests/fixtures/subdir/subdir.txt"),
+        ]
+    );
+}

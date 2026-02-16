@@ -1,4 +1,5 @@
 #[derive(Clone)]
+/// recurse option
 pub struct Recurse {
     pub enabled: bool,
     pub depth_limit: Option<usize>,

@@ -14,6 +14,7 @@ use crate::helpers::validate::validate_list_extensions;
 const MAX_THREADS: usize = 8;
 
 #[derive(Clone)]
+/// core module
 pub struct Swdir {
     root_path: PathBuf,
     recurse: Recurse,
@@ -24,21 +25,25 @@ pub struct Swdir {
 }
 
 impl Swdir {
+    /// set root path
     pub fn set_root_path<T: Into<PathBuf>>(&mut self, path: T) -> Self {
         self.root_path = path.into();
         self.to_owned()
     }
 
+    /// set recurse option
     pub fn set_recurse(&mut self, recurse: Recurse) -> Self {
         self.recurse = recurse;
         self.to_owned()
     }
 
+    /// disable option to skip hidden files / directories
     pub fn disable_skip_hidden(&mut self) -> Self {
         self.skip_hidden = false;
         self.to_owned()
     }
 
+    /// set extension allowlist
     pub fn set_extension_allowlist<T: Into<String> + Clone>(
         &mut self,
         list: &[T],
@@ -51,6 +56,7 @@ impl Swdir {
         Ok(self.to_owned())
     }
 
+    /// set extension denylist
     pub fn set_extension_denylist<T: Into<String> + Clone>(
         &mut self,
         list: &[T],
@@ -63,6 +69,7 @@ impl Swdir {
         Ok(self.to_owned())
     }
 
+    /// scan directory
     pub fn scan(&self) -> DirNode {
         self.scan_parallel()
     }
