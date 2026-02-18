@@ -28,7 +28,7 @@
 ///     let dir_node = Swdir::default()
 ///         .set_root_path("/some/path")
 ///         .set_recurse(recurse)
-///         .disable_skip_hidden() // don't skip hidden files and directories
+///         .include_hidden() // don't skip hidden files and directories
 ///         .walk();
 /// }
 /// ```

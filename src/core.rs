@@ -18,7 +18,7 @@ const MAX_THREADS: usize = 8;
 pub struct Swdir {
     root_path: PathBuf,
     recurse: Recurse,
-    skip_hidden: bool,
+    include_hidden: bool,
     extension_allowlist: Option<Vec<String>>,
     extension_denylist: Option<Vec<String>>,
     max_threads: usize,
@@ -38,8 +38,8 @@ impl Swdir {
     }
 
     /// disable option to skip hidden files / directories
-    pub fn disable_skip_hidden(&mut self) -> Self {
-        self.skip_hidden = false;
+    pub fn include_hidden(&mut self) -> Self {
+        self.include_hidden = true;
         self.to_owned()
     }
 
@@ -81,7 +81,7 @@ impl Swdir {
             root_path: PathBuf::from("."),
             max_threads: MAX_THREADS,
             recurse: Recurse::default(),
-            skip_hidden: true,
+            include_hidden: false,
             extension_allowlist: None,
             extension_denylist: None,
         }

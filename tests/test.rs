@@ -3,13 +3,13 @@ use std::path::PathBuf;
 use swdir::{Recurse, Swdir};
 
 #[test]
-fn it_works() {
+fn walk_current_directory_ok() {
     let result = Swdir::default().set_root_path(".").walk();
     assert_eq!(result.path, std::path::Path::new(".").to_path_buf());
 }
 
 #[test]
-fn scan_not_recurse() {
+fn walk_not_recurse_ok() {
     let result = Swdir::default().set_root_path("tests/fixtures").walk();
     assert_eq!(
         result.files.as_array().unwrap(),
@@ -22,7 +22,7 @@ fn scan_not_recurse() {
 }
 
 #[test]
-fn scan_with_skip_hidden() {
+fn walk_not_include_hidden_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
@@ -45,14 +45,14 @@ fn scan_with_skip_hidden() {
 }
 
 #[test]
-fn scan_without_skip_hidden() {
+fn walk_include_hidden_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
             enabled: true,
             depth_limit: Some(1),
         })
-        .disable_skip_hidden()
+        .include_hidden()
         .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
@@ -74,7 +74,7 @@ fn scan_without_skip_hidden() {
 }
 
 #[test]
-fn scan_recurse_depth_limit_0() {
+fn walk_recurse_depth_limit_0_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
@@ -93,7 +93,7 @@ fn scan_recurse_depth_limit_0() {
 }
 
 #[test]
-fn scan_recurse_depth_limit_1() {
+fn walk_recurse_depth_limit_1_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_recurse(Recurse {
@@ -116,7 +116,7 @@ fn scan_recurse_depth_limit_1() {
 }
 
 #[test]
-fn scan_with_allowlist() {
+fn walk_with_allowlist_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_extension_allowlist(&["md"])
@@ -129,7 +129,7 @@ fn scan_with_allowlist() {
 }
 
 #[test]
-fn scan_with_denylist() {
+fn walk_with_denylist_ok() {
     let result = Swdir::default()
         .set_root_path("tests/fixtures")
         .set_extension_denylist(&["md"])
@@ -145,7 +145,7 @@ fn scan_with_denylist() {
 }
 
 #[test]
-fn err_duplicate_extension_allowlist() {
+fn duplicate_extension_allowlist_err() {
     let result = Swdir::default()
         .set_extension_denylist(&["txt"])
         .unwrap()
@@ -154,7 +154,7 @@ fn err_duplicate_extension_allowlist() {
 }
 
 #[test]
-fn err_duplicate_extension_denylist() {
+fn duplicate_extension_denylist_err() {
     let result = Swdir::default()
         .set_extension_allowlist(&["txt"])
         .unwrap()
@@ -163,13 +163,13 @@ fn err_duplicate_extension_denylist() {
 }
 
 #[test]
-fn err_allowlist_start_with_period() {
+fn allowlist_start_with_period_err() {
     let result = Swdir::default().set_extension_allowlist(&[".txt"]);
     assert!(result.is_err());
 }
 
 #[test]
-fn err_denylist_start_with_period() {
+fn denylist_start_with_period_err() {
     let result = Swdir::default().set_extension_denylist(&[".txt"]);
     assert!(result.is_err());
 }

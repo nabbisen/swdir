@@ -58,7 +58,7 @@ impl Swdir {
         for entry in entries.filter_map(Result::ok) {
             let path = entry.path();
 
-            if self.skip_hidden && is_hidden(&entry) {
+            if !self.include_hidden && is_hidden(&entry) {
                 continue;
             }
 
@@ -81,7 +81,7 @@ impl Swdir {
                     let extension = extension.to_string_lossy();
                     extension_denylist.iter().all(|x| **x != extension)
                 } else {
-                    !(self.skip_hidden && is_hidden(&entry))
+                    self.include_hidden || !is_hidden(&entry)
                 }
             } else {
                 true
