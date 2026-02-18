@@ -1,7 +1,7 @@
 /// ```rust
 /// use swdir::Swdir;
 ///
-/// let dir_node = Swdir::default().set_root_path("/some/path").scan(); // -> DirNode
+/// let dir_node = Swdir::default().set_root_path("/some/path").walk(); // -> DirNode
 /// ```
 use std::path::PathBuf;
 
@@ -69,9 +69,9 @@ impl Swdir {
         Ok(self.to_owned())
     }
 
-    /// scan directory
-    pub fn scan(&self) -> DirNode {
-        self.scan_parallel()
+    /// walk directory
+    pub fn walk(&self) -> DirNode {
+        self.walk_parallel()
     }
 }
 

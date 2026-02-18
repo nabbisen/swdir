@@ -4,13 +4,13 @@ use swdir::{Recurse, Swdir};
 
 #[test]
 fn it_works() {
-    let result = Swdir::default().set_root_path(".").scan();
+    let result = Swdir::default().set_root_path(".").walk();
     assert_eq!(result.path, std::path::Path::new(".").to_path_buf());
 }
 
 #[test]
 fn scan_not_recurse() {
-    let result = Swdir::default().set_root_path("tests/fixtures").scan();
+    let result = Swdir::default().set_root_path("tests/fixtures").walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -29,7 +29,7 @@ fn scan_with_skip_hidden() {
             enabled: true,
             depth_limit: Some(1),
         })
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -53,7 +53,7 @@ fn scan_without_skip_hidden() {
             depth_limit: Some(1),
         })
         .disable_skip_hidden()
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -81,7 +81,7 @@ fn scan_recurse_depth_limit_0() {
             enabled: true,
             depth_limit: Some(0),
         })
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -100,7 +100,7 @@ fn scan_recurse_depth_limit_1() {
             enabled: true,
             depth_limit: Some(1),
         })
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -121,7 +121,7 @@ fn scan_with_allowlist() {
         .set_root_path("tests/fixtures")
         .set_extension_allowlist(&["md"])
         .unwrap()
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[PathBuf::from("tests/fixtures/test.md"),]
@@ -134,7 +134,7 @@ fn scan_with_denylist() {
         .set_root_path("tests/fixtures")
         .set_extension_denylist(&["md"])
         .unwrap()
-        .scan();
+        .walk();
     assert_eq!(
         result.files.as_array().unwrap(),
         &[
@@ -176,7 +176,7 @@ fn err_denylist_start_with_period() {
 
 #[test]
 fn dir_node_flatten_paths_not_recurse_ok() {
-    let dir_node = Swdir::default().set_root_path("tests/fixtures").scan();
+    let dir_node = Swdir::default().set_root_path("tests/fixtures").walk();
     let flatten_paths = dir_node.flatten_paths();
     assert_eq!(
         flatten_paths,
@@ -196,7 +196,7 @@ fn dir_node_flatten_paths_recurse_ok() {
             enabled: true,
             depth_limit: Some(1),
         })
-        .scan();
+        .walk();
     let flatten_paths = dir_node.flatten_paths();
     assert_eq!(
         flatten_paths,

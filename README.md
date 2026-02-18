@@ -19,7 +19,7 @@ cargo install swdir
 use swdir::Swdir;
 
 fn run() {
-    let dir_node = Swdir::default().set_root_path("/some/path").scan();
+    let dir_node = Swdir::default().set_root_path("/some/path").walk();
     // -> DirNode (files and subdirectories)
     //     -> flatten_paths() returns Vec<PathBuf>
 }
@@ -40,7 +40,7 @@ fn run() {
         .set_root_path("/some/path")
         .set_recurse(recurse)
         .disable_skip_hidden() // disable skip hidden files and directories
-        .scan();
+        .walk();
 }
 ```
 
@@ -54,12 +54,12 @@ fn run() {
         .set_root_path("/some/path")
         .set_extension_allowlist(&["md"])
         .unwrap()
-        .scan();
+        .walk();
 
     let dir_node_with_denylist = Swdir::default()
         .set_root_path("/some/path")
         .set_extension_denylist(&["md"])
         .unwrap()
-        .scan();
+        .walk();
 }
 ```

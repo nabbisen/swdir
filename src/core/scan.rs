@@ -13,7 +13,7 @@ use super::Swdir;
 
 impl Swdir {
     /// scan to build tree with concurrency of specified process number
-    pub(super) fn scan_parallel(&self) -> DirNode {
+    pub(super) fn walk_parallel(&self) -> DirNode {
         // thread pool
         let pool = ThreadPoolBuilder::new()
             .num_threads(self.max_threads)
