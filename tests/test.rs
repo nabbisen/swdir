@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use swdir::{Recurse, Swdir};
+use swdir::{Recurse, Swdir, SwdirError};
 
 #[test]
 fn walk_current_directory_ok() {
@@ -150,7 +150,10 @@ fn duplicate_extension_allowlist_err() {
         .set_extension_denylist(&["txt"])
         .unwrap()
         .set_extension_allowlist(&["txt"]);
-    assert!(result.is_err());
+    assert_eq!(
+        result.is_err_and(|x| x == SwdirError::DuplicateExtensionList),
+        true
+    );
 }
 
 #[test]
@@ -159,19 +162,28 @@ fn duplicate_extension_denylist_err() {
         .set_extension_allowlist(&["txt"])
         .unwrap()
         .set_extension_denylist(&["txt"]);
-    assert!(result.is_err());
+    assert_eq!(
+        result.is_err_and(|x| x == SwdirError::DuplicateExtensionList),
+        true
+    );
 }
 
 #[test]
 fn allowlist_start_with_period_err() {
     let result = Swdir::default().set_extension_allowlist(&[".txt"]);
-    assert!(result.is_err());
+    assert_eq!(
+        result.is_err_and(|x| x == SwdirError::InvalidExtensionListItem(".txt".to_owned())),
+        true
+    );
 }
 
 #[test]
 fn denylist_start_with_period_err() {
     let result = Swdir::default().set_extension_denylist(&[".txt"]);
-    assert!(result.is_err());
+    assert_eq!(
+        result.is_err_and(|x| x == SwdirError::InvalidExtensionListItem(".txt".to_owned())),
+        true
+    );
 }
 
 #[test]

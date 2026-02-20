@@ -46,19 +46,19 @@ fn run() {
 ### Allowlist and denylist
 
 ```rust
-use swdir::Swdir;
+use swdir::{Swdir, SwdirError};
 
-fn run() {
+fn run() -> Result<(), SwdirError> {
     let dir_node_with_allowlist = Swdir::default()
         .set_root_path("/some/path")
-        .set_extension_allowlist(&["md"])
-        .unwrap()
+        .set_extension_allowlist(&["md"])?
         .walk();
 
     let dir_node_with_denylist = Swdir::default()
         .set_root_path("/some/path")
-        .set_extension_denylist(&["md"])
-        .unwrap()
+        .set_extension_denylist(&["md"])?
         .walk();
+
+    Ok(())
 }
 ```

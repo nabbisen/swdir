@@ -8,6 +8,7 @@ use std::path::PathBuf;
 mod scan;
 
 use crate::helpers::dir_node::DirNode;
+use crate::helpers::error::SwdirError;
 use crate::helpers::recurse::Recurse;
 use crate::helpers::validate::validate_list_extensions;
 
@@ -47,11 +48,9 @@ impl Swdir {
     pub fn set_extension_allowlist<T: Into<String> + Clone>(
         &mut self,
         list: &[T],
-    ) -> Result<Self, String> {
+    ) -> Result<Self, SwdirError> {
         let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
-        if let Err(err) = validate_list_extensions(&list, self.extension_denylist.as_ref()) {
-            return Err(err);
-        }
+        validate_list_extensions(&list, self.extension_denylist.as_ref())?;
         self.extension_allowlist = Some(list);
         Ok(self.to_owned())
     }
@@ -60,11 +59,9 @@ impl Swdir {
     pub fn set_extension_denylist<T: Into<String> + Clone>(
         &mut self,
         list: &[T],
-    ) -> Result<Self, String> {
+    ) -> Result<Self, SwdirError> {
         let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
-        if let Err(err) = validate_list_extensions(&list, self.extension_allowlist.as_ref()) {
-            return Err(err);
-        }
+        validate_list_extensions(&list, self.extension_allowlist.as_ref())?;
         self.extension_denylist = Some(list);
         Ok(self.to_owned())
     }
