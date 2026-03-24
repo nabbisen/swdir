@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use swdir::{Recurse, Swdir, SwdirError};
+use swdir::{DirNodeCount, Recurse, Swdir, SwdirError};
 
 #[test]
 fn walk_current_directory_ok() {
@@ -225,7 +225,7 @@ fn dir_node_flatten_paths_recurse_ok() {
 fn count_root_only_ok() {
     let dir_node = Swdir::default().set_root_path("tests/fixtures").walk();
     let count = dir_node.count();
-    assert_eq!(count, (3, 1));
+    assert_eq!(count, DirNodeCount { files: 3, dirs: 1 });
 }
 
 #[test]
@@ -238,5 +238,5 @@ fn count_sub_dir_included_ok() {
         })
         .walk();
     let count = dir_node.count();
-    assert_eq!(count, (4, 2));
+    assert_eq!(count, DirNodeCount { files: 4, dirs: 2 });
 }

@@ -57,5 +57,9 @@ mod helpers;
 
 pub use crate::{
     core::Swdir,
-    helpers::{dir_node::DirNode, error::SwdirError, recurse::Recurse},
+    helpers::{
+        dir_node::{DirNode, dir_node_count::DirNodeCount},
+        error::SwdirError,
+        recurse::Recurse,
+    },
 };

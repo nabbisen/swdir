@@ -1,5 +1,9 @@
 use std::{cmp::Ordering, path::PathBuf};
 
+pub mod dir_node_count;
+
+use dir_node_count::DirNodeCount;
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 /// directory tree
 pub struct DirNode {
@@ -32,8 +36,8 @@ impl DirNode {
     }
 
     /// count (files, directories) of root and all sub_dirs
-    pub fn count(&self) -> (usize, usize) {
-        count((0, 0), self)
+    pub fn count(&self) -> DirNodeCount {
+        DirNodeCount::new(self)
     }
 }
 
@@ -60,19 +64,4 @@ fn flatten_paths_sort(a: &PathBuf, b: &PathBuf) -> Ordering {
             let name_b = b.file_name().unwrap_or_default();
             name_a.cmp(name_b)
         })
-}
-
-/// count (files, dirs) recursively
-fn count(current: (usize, usize), dir_node: &DirNode) -> (usize, usize) {
-    let mut ret = current;
-
-    ret.0 += dir_node.files.len();
-    ret.1 += 1;
-
-    let (sub_dirs_files_count, sub_dirs_dirs_count) = dir_node.sub_dirs.iter().fold((0, 0), count);
-
-    ret.0 += sub_dirs_files_count;
-    ret.1 += sub_dirs_dirs_count;
-
-    ret
 }
