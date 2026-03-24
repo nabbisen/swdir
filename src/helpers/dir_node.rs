@@ -18,7 +18,7 @@ impl DirNode {
         }
     }
 
-    /// return path list
+    /// get flatten path list
     pub fn flatten_paths(&self) -> Vec<PathBuf> {
         let mut ret = self.files.clone();
         ret.extend(
@@ -29,6 +29,11 @@ impl DirNode {
         // todo: sort alg: lower dir first ?
         ret.sort_by(flatten_paths_sort);
         ret
+    }
+
+    /// count (files, directories) of root and all sub_dirs
+    pub fn count(&self) -> (usize, usize) {
+        count((0, 0), self)
     }
 }
 
@@ -55,4 +60,19 @@ fn flatten_paths_sort(a: &PathBuf, b: &PathBuf) -> Ordering {
             let name_b = b.file_name().unwrap_or_default();
             name_a.cmp(name_b)
         })
+}
+
+/// count (files, dirs) recursively
+fn count(current: (usize, usize), dir_node: &DirNode) -> (usize, usize) {
+    let mut ret = current;
+
+    ret.0 += dir_node.files.len();
+    ret.1 += 1;
+
+    let (sub_dirs_files_count, sub_dirs_dirs_count) = dir_node.sub_dirs.iter().fold((0, 0), count);
+
+    ret.0 += sub_dirs_files_count;
+    ret.1 += sub_dirs_dirs_count;
+
+    ret
 }

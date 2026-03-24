@@ -220,3 +220,23 @@ fn dir_node_flatten_paths_recurse_ok() {
         ]
     );
 }
+
+#[test]
+fn count_root_only_ok() {
+    let dir_node = Swdir::default().set_root_path("tests/fixtures").walk();
+    let count = dir_node.count();
+    assert_eq!(count, (3, 1));
+}
+
+#[test]
+fn count_sub_dir_included_ok() {
+    let dir_node = Swdir::default()
+        .set_root_path("tests/fixtures")
+        .set_recurse(Recurse {
+            enabled: true,
+            depth_limit: Some(1),
+        })
+        .walk();
+    let count = dir_node.count();
+    assert_eq!(count, (4, 2));
+}
