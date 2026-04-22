@@ -1,6 +1,6 @@
 [package]
 name = "swdir"
-version = "0.8.3"
+version = "0.8.4"
 edition = "2024"
 
 description = "Swiftly traverse and scan directories recursively. Sway 🪭, swing 🎷 or swim 🪼 in directories."
@@ -11,7 +11,6 @@ categories = ["filesystem"]
 keywords = ["filesystem", "walk", "iterator", "concurrency", "filter"]
 repository = "https://github.com/nabbisen/swdir"
 readme = "README.md"
-rust-version = "1.87.0"
 
 [profile.release]     # shrink executable size
 opt-level = "z"
