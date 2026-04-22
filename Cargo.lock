@@ -73,7 +73,7 @@ dependencies = [
 
 [[package]]
 name = "swdir"
-version = "0.8.4"
+version = "0.9.0"
 dependencies = [
  "rayon",
  "thiserror",

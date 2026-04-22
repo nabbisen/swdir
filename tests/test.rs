@@ -12,7 +12,7 @@ fn walk_current_directory_ok() {
 fn walk_not_recurse_ok() {
     let result = Swdir::default().set_root_path("tests/fixtures").walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/test"),
             PathBuf::from("tests/fixtures/test.md"),
@@ -31,7 +31,7 @@ fn walk_not_include_hidden_ok() {
         })
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/test"),
             PathBuf::from("tests/fixtures/test.md"),
@@ -39,7 +39,7 @@ fn walk_not_include_hidden_ok() {
         ]
     );
     assert_eq!(
-        result.sub_dirs[0].files.as_array().unwrap(),
+        result.sub_dirs[0].files.as_slice(),
         &[PathBuf::from("tests/fixtures/subdir/subdir.txt"),]
     );
 }
@@ -55,7 +55,7 @@ fn walk_include_hidden_ok() {
         .include_hidden()
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/.hidden-file"),
             PathBuf::from("tests/fixtures/test"),
@@ -64,11 +64,11 @@ fn walk_include_hidden_ok() {
         ]
     );
     assert_eq!(
-        result.sub_dirs[0].files.as_array().unwrap(),
+        result.sub_dirs[0].files.as_slice(),
         &[PathBuf::from("tests/fixtures/.hidden-dir/dummy"),]
     );
     assert_eq!(
-        result.sub_dirs[1].files.as_array().unwrap(),
+        result.sub_dirs[1].files.as_slice(),
         &[PathBuf::from("tests/fixtures/subdir/subdir.txt"),]
     );
 }
@@ -83,7 +83,7 @@ fn walk_recurse_depth_limit_0_ok() {
         })
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/test"),
             PathBuf::from("tests/fixtures/test.md"),
@@ -102,7 +102,7 @@ fn walk_recurse_depth_limit_1_ok() {
         })
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/test"),
             PathBuf::from("tests/fixtures/test.md"),
@@ -110,7 +110,7 @@ fn walk_recurse_depth_limit_1_ok() {
         ]
     );
     assert_eq!(
-        result.sub_dirs[0].files.as_array().unwrap(),
+        result.sub_dirs[0].files.as_slice(),
         &[PathBuf::from("tests/fixtures/subdir/subdir.txt"),]
     );
 }
@@ -123,7 +123,7 @@ fn walk_with_allowlist_ok() {
         .unwrap()
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[PathBuf::from("tests/fixtures/test.md"),]
     );
 }
@@ -136,7 +136,7 @@ fn walk_with_denylist_ok() {
         .unwrap()
         .walk();
     assert_eq!(
-        result.files.as_array().unwrap(),
+        result.files.as_slice(),
         &[
             PathBuf::from("tests/fixtures/test"),
             PathBuf::from("tests/fixtures/test.txt"),

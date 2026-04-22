@@ -1,6 +1,6 @@
 [package]
 name = "swdir"
-version = "0.8.4"
+version = "0.9.0"
 edition = "2024"
 
 description = "Swiftly traverse and scan directories recursively. Sway 🪭, swing 🎷 or swim 🪼 in directories."
