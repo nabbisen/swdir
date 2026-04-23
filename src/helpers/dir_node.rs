@@ -1,4 +1,7 @@
-use std::{cmp::Ordering, path::PathBuf};
+use std::{
+    cmp::Ordering,
+    path::{Path, PathBuf},
+};
 
 pub mod dir_node_count;
 
@@ -31,7 +34,7 @@ impl DirNode {
                 .flat_map(|dir_node| dir_node.flatten_paths()),
         );
         // todo: sort alg: lower dir first ?
-        ret.sort_by(flatten_paths_sort);
+        ret.sort_by(|a, b| flatten_paths_sort(a, b));
         ret
     }
 
@@ -42,7 +45,7 @@ impl DirNode {
 }
 
 /// note: use extension() instead of is_dir() because file system i/o is heavier
-fn flatten_paths_sort(a: &PathBuf, b: &PathBuf) -> Ordering {
+fn flatten_paths_sort(a: &Path, b: &Path) -> Ordering {
     // 第一条件: ディレクトリ階層数
     let depth_a = a.components().count();
     let depth_b = b.components().count();

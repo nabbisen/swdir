@@ -1,6 +1,6 @@
 [package]
 name = "swdir"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2024"
 
 description = "Swiftly traverse and scan directories recursively. Sway 🪭, swing 🎷 or swim 🪼 in directories."
@@ -11,6 +11,13 @@ categories = ["filesystem"]
 keywords = ["filesystem", "walk", "iterator", "concurrency", "filter"]
 repository = "https://github.com/nabbisen/swdir"
 readme = "README.md"
+
+[features]
+# The basic filter system is part of the crate's standard surface.
+# Turn it off only if you genuinely want a bare walker with no filtering
+# (rare — most callers should leave the default on).
+default = ["filter"]
+filter = []
 
 [profile.release]     # shrink executable size
 opt-level = "z"

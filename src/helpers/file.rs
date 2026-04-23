@@ -1,8 +1,14 @@
-/// check if file is hidden
-pub fn is_hidden(entry: &std::fs::DirEntry) -> bool {
-    let start_with_dot = entry.file_name().to_string_lossy().starts_with('.');
+//! Filesystem helpers shared across the crate.
 
-    if start_with_dot {
+use std::fs::DirEntry;
+
+/// Is `entry` considered hidden by platform conventions?
+///
+/// * Unix: file name starts with `.`.
+/// * Windows: file name starts with `.` *or* the filesystem's hidden
+///   attribute bit is set.
+pub fn is_hidden(entry: &DirEntry) -> bool {
+    if entry.file_name().to_string_lossy().starts_with('.') {
         return true;
     }
 

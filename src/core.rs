@@ -1,86 +1,143 @@
-/// ```rust
-/// use swdir::Swdir;
-///
-/// let dir_node = Swdir::default().set_root_path("/some/path").walk(); // -> DirNode
-/// ```
+//! The [`Swdir`] builder — the main entry point for recursive scans.
+//!
+//! 0.10 changes from 0.9:
+//!
+//! * Builder methods take `mut self` and return `Self`, dropping the `set_`
+//!   prefix. Chains read top-to-bottom: `Swdir::new().root_path(..).filter(..)`.
+//! * `include_hidden()`, `set_extension_allowlist()`, `set_extension_denylist()`
+//!   are gone. Their jobs are done by [`FilterRule`] (feature `filter`).
+//! * `walk()` returns [`WalkReport`] instead of a bare [`DirNode`], making
+//!   partial failures observable. The old `eprintln!`-to-stderr behavior
+//!   is gone.
+
 use std::path::PathBuf;
 
 mod scan;
 
 use crate::helpers::dir_node::DirNode;
-use crate::helpers::error::SwdirError;
 use crate::helpers::recurse::Recurse;
-use crate::helpers::validate::validate_list_extensions;
+use crate::helpers::walk_error::WalkError;
+use crate::helpers::walk_report::WalkReport;
+
+#[cfg(feature = "filter")]
+use crate::helpers::filter::FilterRule;
 
 const MAX_THREADS: usize = 8;
 
-#[derive(Clone)]
-/// core module
+/// Configures and runs a recursive directory scan.
+///
+/// See the crate-level docs for worked examples.
+#[derive(Clone, Debug)]
 pub struct Swdir {
     root_path: PathBuf,
     recurse: Recurse,
-    include_hidden: bool,
-    extension_allowlist: Option<Vec<String>>,
-    extension_denylist: Option<Vec<String>>,
     max_threads: usize,
+    #[cfg(feature = "filter")]
+    filters: Vec<FilterRule>,
 }
 
 impl Swdir {
-    /// set root path
-    pub fn set_root_path<T: Into<PathBuf>>(&mut self, path: T) -> Self {
-        self.root_path = path.into();
-        self.to_owned()
-    }
-
-    /// set recurse option
-    pub fn set_recurse(&mut self, recurse: Recurse) -> Self {
-        self.recurse = recurse;
-        self.to_owned()
-    }
-
-    /// disable option to skip hidden files / directories
-    pub fn include_hidden(&mut self) -> Self {
-        self.include_hidden = true;
-        self.to_owned()
-    }
-
-    /// set extension allowlist
-    pub fn set_extension_allowlist<T: Into<String> + Clone>(
-        &mut self,
-        list: &[T],
-    ) -> Result<Self, SwdirError> {
-        let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
-        validate_list_extensions(&list, self.extension_denylist.as_ref())?;
-        self.extension_allowlist = Some(list);
-        Ok(self.to_owned())
-    }
-
-    /// set extension denylist
-    pub fn set_extension_denylist<T: Into<String> + Clone>(
-        &mut self,
-        list: &[T],
-    ) -> Result<Self, SwdirError> {
-        let list: Vec<String> = list.to_vec().into_iter().map(|x| x.into()).collect();
-        validate_list_extensions(&list, self.extension_allowlist.as_ref())?;
-        self.extension_denylist = Some(list);
-        Ok(self.to_owned())
-    }
-
-    /// walk directory
-    pub fn walk(&self) -> DirNode {
-        self.walk_parallel()
-    }
-}
-
-impl Swdir {
-    pub fn default() -> Self {
-        Self {
-            root_path: PathBuf::from("."),
-            max_threads: MAX_THREADS,
-            recurse: Recurse::default(),
-            include_hidden: false,
-            extension_allowlist: None,
-            extension_denylist: None,
+    /// Create a new [`Swdir`] with the default configuration.
+    ///
+    /// The default installs a single [`FilterRule::SkipHidden`] so the
+    /// common case ("scan this tree, skip dotfiles") is a one-liner. To
+    /// see hidden entries, call [`Swdir::clear_filters`] before — or
+    /// instead of — adding your own.
+    pub fn new() -> Self {
+        #[cfg(feature = "filter")]
+        {
+            Self {
+                root_path: PathBuf::from("."),
+                max_threads: MAX_THREADS,
+                recurse: Recurse::default(),
+                filters: vec![FilterRule::SkipHidden],
+            }
         }
+        #[cfg(not(feature = "filter"))]
+        {
+            Self {
+                root_path: PathBuf::from("."),
+                max_threads: MAX_THREADS,
+                recurse: Recurse::default(),
+            }
+        }
+    }
+
+    /// Set the scan root.
+    pub fn root_path<P: Into<PathBuf>>(mut self, path: P) -> Self {
+        self.root_path = path.into();
+        self
+    }
+
+    /// Set the recursion policy.
+    pub fn recurse(mut self, recurse: Recurse) -> Self {
+        self.recurse = recurse;
+        self
+    }
+
+    /// Cap the size of the internal rayon thread pool.
+    ///
+    /// Defaults to 8. Lower this if you have other CPU work sharing the
+    /// process; raise it if you're scanning huge, deep trees on fast
+    /// storage and profiling shows it helps.
+    pub fn max_threads(mut self, n: usize) -> Self {
+        self.max_threads = n.max(1);
+        self
+    }
+
+    /// Append one filter rule. Rules compose with AND.
+    ///
+    /// Available only with the default `filter` feature.
+    #[cfg(feature = "filter")]
+    pub fn filter(mut self, rule: FilterRule) -> Self {
+        self.filters.push(rule);
+        self
+    }
+
+    /// Append several filter rules at once.
+    #[cfg(feature = "filter")]
+    pub fn filters<I: IntoIterator<Item = FilterRule>>(mut self, rules: I) -> Self {
+        self.filters.extend(rules);
+        self
+    }
+
+    /// Remove every filter rule, *including* the default
+    /// [`FilterRule::SkipHidden`]. Use this when you want to start from a
+    /// blank slate (or simply want to see hidden entries).
+    #[cfg(feature = "filter")]
+    pub fn clear_filters(mut self) -> Self {
+        self.filters.clear();
+        self
+    }
+
+    /// Borrow the currently-installed filter rules.
+    #[cfg(feature = "filter")]
+    pub fn filter_rules(&self) -> &[FilterRule] {
+        &self.filters
+    }
+
+    /// Borrow the current recursion policy.
+    pub fn recurse_policy(&self) -> Recurse {
+        self.recurse
+    }
+
+    /// Run the scan and return a [`WalkReport`] carrying both the tree
+    /// and any errors encountered along the way.
+    pub fn walk(&self) -> WalkReport {
+        let mut errors: Vec<WalkError> = Vec::new();
+        let tree = self.walk_parallel(&mut errors);
+        WalkReport { tree, errors }
+    }
+
+    /// Convenience: run the scan and return just the tree. Errors, if
+    /// any, are discarded. Prefer [`Swdir::walk`] in real code.
+    pub fn walk_tree(&self) -> DirNode {
+        self.walk().tree
+    }
+}
+
+impl Default for Swdir {
+    fn default() -> Self {
+        Self::new()
     }
 }

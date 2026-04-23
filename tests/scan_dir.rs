@@ -251,8 +251,7 @@ fn scan_dir_permission_denied_err() {
 
     let tmp = TmpDir::new("perm-denied");
     // chmod 000 on the directory itself — read_dir should fail.
-    fs::set_permissions(tmp.path(), fs::Permissions::from_mode(0o000))
-        .expect("chmod 000");
+    fs::set_permissions(tmp.path(), fs::Permissions::from_mode(0o000)).expect("chmod 000");
 
     let result = scan_dir(tmp.path());
 
@@ -271,9 +270,11 @@ fn nix_running_as_root() -> bool {
     fs::read_to_string("/proc/self/status")
         .ok()
         .and_then(|s| {
-            s.lines()
-                .find(|l| l.starts_with("Uid:"))
-                .and_then(|l| l.split_whitespace().nth(1).and_then(|x| x.parse::<u32>().ok()))
+            s.lines().find(|l| l.starts_with("Uid:")).and_then(|l| {
+                l.split_whitespace()
+                    .nth(1)
+                    .and_then(|x| x.parse::<u32>().ok())
+            })
         })
         .map(|uid| uid == 0)
         .unwrap_or(false)
@@ -325,11 +326,12 @@ fn scan_dir_does_not_panic_on_bad_input() {
 #[test]
 fn walk_still_works_alongside_scan_dir() {
     use swdir::Swdir;
-    // Old API against the checked-in fixture directory.
-    let result = Swdir::default().set_root_path("tests/fixtures").walk();
-    assert_eq!(result.path, Path::new("tests/fixtures").to_path_buf());
+    // High-level API against the checked-in fixture directory.
+    let report = Swdir::new().root_path("tests/fixtures").walk();
+    assert_eq!(report.tree.path, Path::new("tests/fixtures").to_path_buf());
+    assert!(report.is_ok(), "no I/O errors expected on fixtures");
 
-    // New API on the same directory.
+    // Low-level API on the same directory.
     let entries = scan_dir(Path::new("tests/fixtures")).unwrap();
     assert!(!entries.is_empty());
 }
