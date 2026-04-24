@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-04-24
+
+Documentation restructure. No production-code or API changes.
+
+### Changed
+- **README.md slimmed down** from ~270 lines to a 7-section landing
+  page (hero / overview / when-to-use / quick start / features /
+  design notes / pointers). The long-form material moved into the
+  new `docs/` tree so the README reads as an entry point rather than
+  a manual.
+- **`docs/` added** with a functional, topic-scoped hierarchy:
+  - `getting-started.md` — fuller walkthrough after the README.
+  - `guides/recursive-walk.md`, `guides/lazy-loading.md` — the two
+    use cases, end-to-end.
+  - `reference/sort-order.md`, `reference/filter-rules.md`,
+    `reference/error-handling.md`, `reference/feature-flags.md` — one
+    file per concept catalog.
+  - `design-notes.md` — philosophy and non-goals.
+  - `migration/from-0-10-to-0-11.md`, `migration/from-0-9-to-0-10.md`.
+- **Crate-level docs (`src/lib.rs`) trimmed** to quick-start examples
+  plus links into the `docs/` tree. Rust-API users still get a
+  self-contained intro on docs.rs; repository users get the long
+  form one click away.
+
+### Not changed
+- Public API: unchanged.
+- Test suite: unchanged.
+- `Cargo.toml` still references `README.md` as the crate's readme — the
+  crate box on crates.io now displays the slimmer text.
+
 ## [0.11.1] - 2026-04-24
 
 Test-suite reorganization. No production-code or API changes.
