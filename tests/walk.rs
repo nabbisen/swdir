@@ -1,9 +1,24 @@
-//! Integration tests for the 0.10 [`swdir::Swdir`] API.
+//! Integration tests for the high-level [`swdir::Swdir`] / walk API.
 //!
-//! These mirror the 0.9 tests as far as the behavior is still meaningful,
-//! and add coverage for the pieces that are actually new: [`FilterRule`]
-//! composition, the two-axis [`Decision`] (include vs descend), and the
-//! [`WalkReport`] / [`WalkError`] error-collection contract.
+//! Organized by product-contract section, not by implementation
+//! boundary. Keeping this as a single binary — rather than a
+//! `tests/walk/` directory — reflects the cohesion of the walk API:
+//! it's one builder and one `walk()` method, and the sections below
+//! are just facets of that single surface.
+//!
+//! * Defaults & the default-`SkipHidden` contract
+//! * Recurse policy
+//! * FilterRule composition (default on: the `filter` feature gates this file)
+//! * Decision axes (include vs descend)
+//! * MaxDepth filter
+//! * WalkReport — errors collected, not printed
+//! * Flatten / count helpers on DirNode
+//! * SortOrder
+//!
+//! If a new walk test needs temp-directory fixtures, add
+//! `#[path = "common/mod.rs"] mod common;` the same way `scan_dir.rs`
+//! does. Today's walk tests only touch the checked-in `tests/fixtures/`
+//! tree, so the helper isn't loaded here.
 
 #![cfg(feature = "filter")]
 
@@ -102,7 +117,7 @@ fn clear_filters_exposes_hidden() {
 }
 
 // ---------------------------------------------------------------------------
-// Recurse enum replaces the 0.9 struct — cover every variant.
+// Recurse — enum replaces 0.9's two-field struct; cover every variant.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -161,7 +176,7 @@ fn recurse_unlimited_descends_whole_tree() {
 }
 
 // ---------------------------------------------------------------------------
-// FilterRule composition — replaces 0.9 set_extension_* setters.
+// FilterRule composition — the 0.10 unified filter model.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -221,7 +236,7 @@ fn denylist_rejects_leading_period() {
 }
 
 // ---------------------------------------------------------------------------
-// Decision: the include / descend split.
+// Decision — the include / descend split.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -251,7 +266,7 @@ fn only_kinds_file_still_reaches_nested_files() {
 }
 
 // ---------------------------------------------------------------------------
-// MaxDepth filter: the depth-aware variant of Recurse::Depth.
+// MaxDepth filter — the depth-aware variant of Recurse::Depth.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -275,7 +290,7 @@ fn max_depth_filter_zero_drops_nested() {
 }
 
 // ---------------------------------------------------------------------------
-// WalkReport: errors are collected, not printed.
+// WalkReport — errors are collected, not printed to stderr.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -307,7 +322,7 @@ fn walk_tree_discards_errors() {
 }
 
 // ---------------------------------------------------------------------------
-// Flatten / count — unchanged behavior, just routed via WalkReport.
+// Flatten / count — DirNode helpers, routed via WalkReport.
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -360,7 +375,7 @@ fn count_sub_dir_included_ok() {
 }
 
 // ---------------------------------------------------------------------------
-// 0.11: SortOrder — walk-level ordering contract.
+// SortOrder — 0.11 walk-level ordering contract.
 // ---------------------------------------------------------------------------
 
 #[test]

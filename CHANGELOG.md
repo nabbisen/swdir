@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-04-24
+
+Test-suite reorganization. No production-code or API changes.
+
+### Changed
+- `tests/` restructured so the two integration-test binaries reflect
+  the product surface instead of historical naming:
+  - `tests/test.rs` → `tests/walk.rs` (the `Swdir::walk` story)
+  - `tests/scan_dir.rs` kept, but split into topic-scoped submodules
+    under `tests/scan_dir/`:
+    - `listing.rs` — baseline happy-path listings
+    - `errors.rs` — the atomic-failure contract
+    - `ordering.rs` — `SortOrder` / `scan_dir_with_options`
+    - `dir_entry_helpers.rs` — `display_name`, `relative_to`, cached FileType
+    - `thread_safety.rs` — `Send + 'static`, panic-freedom
+- Shared fixtures (`TmpDir`, `name_set`) extracted to
+  `tests/common/mod.rs` and loaded via `#[path = ...] mod common;`
+  from the binaries that need them.
+- Redundant `walk_still_works_alongside_scan_dir` test dropped —
+  `tests/walk.rs` already covers walk, and `tests/scan_dir.rs` already
+  covers scan. The combined test added no unique signal.
+
+### Removed
+- None from the public API. Only test-file layout moved.
+
 ## [0.11.0] - 2026-04-24
 
 0.11 is an **additive** release focused on making `swdir` a clean

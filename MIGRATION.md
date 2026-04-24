@@ -1,10 +1,10 @@
 # Migration
 
-## Migrating from 0.10
+## Migrating from 0.10 to 0.11
 
 No behavioral breaks against 0.10.
 
-## Migrating from 0.9
+## Migrating from 0.9 to 0.10
 
 0.10 breaks the `Swdir` API on purpose to unify filtering and make
 partial failures observable. The crate's top-level docs carry a full
