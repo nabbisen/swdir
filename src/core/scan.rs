@@ -20,6 +20,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use crate::helpers::recurse::Recurse;
+use crate::helpers::sort::SortOrder;
 use crate::helpers::walk_error::WalkError;
 
 #[cfg(feature = "filter")]
@@ -141,14 +142,29 @@ impl Swdir {
             }
         }
 
-        // Recurse in parallel.
+        // Recurse in parallel. Rayon's ordered `collect` preserves the
+        // input order of `sub_dir_paths`, so `SortOrder::Filesystem`
+        // passes straight through without an explicit sort.
         let mut sub_dirs: Vec<DirNode> = sub_dir_paths
             .into_par_iter()
             .map(|path| self.scan_node(&path, entry_depth + 1, errors))
             .collect();
 
-        sub_dirs.sort();
-        files.sort();
+        match self.sort_order {
+            SortOrder::Filesystem => {
+                // Do nothing — keep OS readdir order in both buckets.
+            }
+            SortOrder::NameAscDirsFirst => {
+                // Each DirNode already holds dirs (`sub_dirs`) and files
+                // (`files`) in separate `Vec`s; callers that walk
+                // sub_dirs before files at each level get the
+                // "directories first" half of the contract for free.
+                // All we owe here is stable name-ascending order within
+                // each bucket.
+                sub_dirs.sort();
+                files.sort();
+            }
+        }
 
         DirNode {
             path: dir_path.to_path_buf(),

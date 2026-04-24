@@ -9,7 +9,7 @@
 //!   via [`DirEntry::is_dir`] — the whole point of returning `Vec<DirEntry>`
 //!   instead of `Vec<PathBuf>` for a lazy tree.
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::fs::{FileType, Metadata};
 use std::path::{Path, PathBuf};
 
@@ -90,5 +90,43 @@ impl DirEntry {
     /// a whole still succeeds; only the per-entry metadata is missing.
     pub fn metadata(&self) -> Option<&Metadata> {
         self.metadata.as_ref()
+    }
+
+    /// Final path component as a **borrowed** [`OsStr`] — intended for
+    /// direct use as a GUI label (tree row, tab title, …).
+    ///
+    /// Unlike [`DirEntry::file_name`], this does *not* allocate; it hands
+    /// back the slice stored inside the cached path. No syscall is made.
+    ///
+    /// For entries produced by [`crate::scan_dir`] the underlying path
+    /// always has a file name, but to stay total the method falls back
+    /// to an empty `&OsStr` instead of panicking if the path somehow
+    /// lacks one (e.g. the path is the filesystem root).
+    pub fn display_name(&self) -> &OsStr {
+        self.path.file_name().unwrap_or(OsStr::new(""))
+    }
+
+    /// This entry's path, relativized to `root`.
+    ///
+    /// Returns `Some(relative)` if `root` is a prefix of `self.path()`,
+    /// else `None`. Pure path arithmetic — no filesystem I/O.
+    ///
+    /// Typical use: a GUI that caches `root` once and wants
+    /// `"sub/thing.txt"` instead of `"/abs/root/sub/thing.txt"` for the
+    /// tree label or a routing key.
+    ///
+    /// ```
+    /// # use std::path::{Path, PathBuf};
+    /// # // The doctest fabricates a DirEntry via the crate-private
+    /// # // constructor, so it runs in-crate only; external callers
+    /// # // get `DirEntry` values from `scan_dir`.
+    /// # fn _shape() {
+    /// # let entry: swdir::DirEntry = unimplemented!();
+    /// let rel = entry.relative_to(Path::new("/workspace"));
+    /// assert!(rel.as_deref().map(Path::is_relative).unwrap_or(true));
+    /// # }
+    /// ```
+    pub fn relative_to(&self, root: &Path) -> Option<PathBuf> {
+        self.path.strip_prefix(root).ok().map(Path::to_path_buf)
     }
 }

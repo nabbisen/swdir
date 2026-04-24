@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-04-24
+
+0.11 is an **additive** release focused on making `swdir` a clean
+supplier for a Directory Tree widget (iced, egui, …). No behavioral
+breaks against 0.10; just three small, narrowly-scoped additions.
+
+### Added
+- `SortOrder` enum with two variants — `Filesystem` (OS `readdir` order)
+  and `NameAscDirsFirst` (dirs first, then files, name-ascending). Used
+  by both the high-level walk and the low-level scan.
+- `ScanOptions` struct (currently holding only `sort_order`) —
+  `#[non_exhaustive]` so future growth is additive. `ScanOptions::new(..)`
+  shortcut and `Default` impl yielding `NameAscDirsFirst`.
+- `Swdir::sort_order(SortOrder) -> Self` — builder method.
+  `Swdir::sort_order_policy() -> SortOrder` — read-back getter.
+- `scan_dir_with_options(&Path, &ScanOptions) -> Result<Vec<DirEntry>, ScanError>` —
+  sorted sibling of `scan_dir`. Single directory only; sorting is an
+  in-memory pass over the cached `FileType` field, so it adds **no
+  extra syscalls** over `scan_dir`.
+- `DirEntry::display_name(&self) -> &OsStr` — borrowed, no allocation;
+  intended for GUI labels.
+- `DirEntry::relative_to(&self, root: &Path) -> Option<PathBuf>` —
+  pure path arithmetic; returns `None` when `root` isn't a prefix.
+
+### Changed
+- Crate top-level docs and `README.md` reframe `scan_dir` as the
+  canonical **lazy-loading API** for GUI tree widgets, and spell out
+  the split between recursive (`Swdir::walk`) and one-directory
+  (`scan_dir*`) entry points.
+- `Swdir::new()` now records a `SortOrder` (default:
+  `NameAscDirsFirst`). Output of `walk()` is unchanged from 0.10 at
+  this default — dirs and files were already sorted per level.
+- Internal: the unconditional `.sort()` in `core::scan::scan_node` is
+  now gated on `SortOrder`; `Filesystem` skips the sort entirely.
+  Rayon's ordered `collect` preserves input order, so no extra work is
+  needed to keep OS order through the parallel descent.
+
+### Not added (explicit non-goals)
+- No regex / glob / arbitrary-closure filters.
+- No async / await API — `scan_dir*` stays sync; wrap with
+  `std::thread::spawn` if off-thread execution is needed.
+- No file-content analysis, URL-routing semantics, symlink-resolution
+  policies.
+- No GUI-tree data model (that's the widget's responsibility).
+- No file watcher, no result cache, no parallelism knobs beyond
+  `max_threads`.
+
+### Migration
+0.10 code keeps working. Optional adjustments:
+
+```rust
+// Take advantage of the new helpers:
+let entries = scan_dir_with_options(
+    path,
+    &ScanOptions::new(SortOrder::NameAscDirsFirst),
+)?;
+for e in &entries {
+    let label: &OsStr = e.display_name();        // was: e.file_name() (owned)
+    let rel   = e.relative_to(root);             // was: e.path().strip_prefix(root).ok()
+}
+
+// Opt out of the default sort in walk():
+let report = Swdir::new()
+    .root_path("/x")
+    .sort_order(SortOrder::Filesystem)
+    .walk();
+```
+
 ## [0.10.0] - 2026-04-23
 
 0.10 is a cleanup release. The API of `Swdir` is reshaped around a unified
@@ -55,16 +123,35 @@ unchanged.
   and similar errors surface through `WalkReport::errors`. Callers who want
   the old behavior can `for err in &report.errors { eprintln!("{err}"); }`.
 
-### Migration
-
-See [MIGRATION.md#migrating-from-09](./MIGRATION.md#migrating-from-09).
-
 ### Not added (explicit non-goals for 0.10)
 - No `advanced-filter` feature. Regex, glob, metadata predicates, and
   arbitrary closure rules are out of scope for this release. The internal
   design leaves room to add them later.
 - No implicit defaults beyond `FilterRule::SkipHidden`. Every other filter
   is opt-in.
+
+### Migration
+The crate docs (`src/lib.rs`) and `README.md` both carry a 0.9→0.10 mapping
+table. Minimal upgrade example:
+
+```rust
+// 0.9
+let tree = Swdir::default()
+    .set_root_path("/some/path")
+    .set_recurse(Recurse { enabled: true, depth_limit: Some(1) })
+    .include_hidden()
+    .set_extension_allowlist(&["md"])?
+    .walk();
+
+// 0.10
+let report = Swdir::new()
+    .root_path("/some/path")
+    .recurse(Recurse::Depth(1))
+    .clear_filters() // drops default SkipHidden
+    .filter(FilterRule::extension_allowlist(["md"])?)
+    .walk();
+let tree = report.tree;
+```
 
 ## [0.9.0] - 2026-04-23
 ### Added

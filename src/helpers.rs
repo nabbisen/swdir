@@ -3,6 +3,7 @@ pub mod dir_node;
 pub mod error;
 pub mod recurse;
 pub mod scan_error;
+pub mod sort;
 pub mod walk_error;
 pub mod walk_report;
 

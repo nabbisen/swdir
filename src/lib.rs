@@ -2,7 +2,23 @@
 //!
 //! Swiftly traverse and scan directories recursively.
 //!
-//! ## Quick start
+//! `swdir` is a small crate that supplies the raw material for a
+//! Directory Tree widget — path listings, recursive walks, typed
+//! entries. It does **not** draw the tree, track file-watch events,
+//! cache results, or interpret file contents; those belong to the GUI
+//! layer that calls into swdir.
+//!
+//! Two entry points cover the common cases:
+//!
+//! | Use case                                    | API                                              |
+//! |---------------------------------------------|--------------------------------------------------|
+//! | **Recursive** walk (batch tools, CLIs)      | [`Swdir::walk`]                                  |
+//! | **Lazy-loading** one-folder scan (GUIs)     | [`scan_dir`] / [`scan_dir_with_options`]         |
+//!
+//! Both share the same [`SortOrder`] concept when reproducible ordering
+//! matters.
+//!
+//! ## Quick start — recursive walk
 //!
 //! ```sh
 //! cargo add swdir
@@ -14,6 +30,48 @@
 //! let report = Swdir::new().root_path("/some/path").walk();
 //! // -> WalkReport { tree: DirNode, errors: Vec<WalkError> }
 //! let paths = report.tree.flatten_paths();
+//! ```
+//!
+//! ## Quick start — lazy loading (for Directory Tree widgets)
+//!
+//! The intended pattern for GUIs: call [`scan_dir_with_options`] each
+//! time the user expands a folder.
+//!
+//! ```no_run
+//! use std::path::Path;
+//! use swdir::{ScanOptions, SortOrder, scan_dir_with_options};
+//!
+//! # fn demo() -> Result<(), swdir::ScanError> {
+//! let opts = ScanOptions::new(SortOrder::NameAscDirsFirst);
+//! let entries = scan_dir_with_options(Path::new("/some/folder"), &opts)?;
+//! for entry in &entries {
+//!     // entry.display_name() — &OsStr, no allocation
+//!     // entry.is_dir() — uses the cached FileType, no syscall
+//!     // entry.relative_to(root) — pure path arithmetic
+//! }
+//! # Ok(()) }
+//! ```
+//!
+//! [`scan_dir`] (no options) stays as-is: OS `readdir` order, no
+//! sorting. Prefer [`scan_dir_with_options`] when the GUI needs a
+//! deterministic display order.
+//!
+//! ## Ordering
+//!
+//! Both walk and scan accept a [`SortOrder`]:
+//!
+//! * [`SortOrder::Filesystem`] — OS `readdir` order; cheapest.
+//! * [`SortOrder::NameAscDirsFirst`] — directories first, then files,
+//!   each group sorted by name ascending. The default, because it's
+//!   what a tree widget usually wants.
+//!
+//! ```no_run
+//! use swdir::{SortOrder, Swdir};
+//!
+//! let report = Swdir::new()
+//!     .root_path("/some/path")
+//!     .sort_order(SortOrder::Filesystem) // skip the in-memory sort
+//!     .walk();
 //! ```
 //!
 //! ## Recursion
@@ -83,41 +141,39 @@
 //! }
 //! ```
 //!
-//! ## Single-directory scan (GUI / lazy loading)
+//! [`scan_dir`] / [`scan_dir_with_options`] are **atomic** instead — on
+//! the first I/O failure they return `Err(ScanError::Io { .. })`
+//! carrying the offending path. The trade-off matches the use case:
+//! batch walks want partial results, a GUI node expand wants
+//! all-or-nothing.
 //!
-//! For GUIs that expand one directory at a time, use the low-level
-//! [`scan_dir`] function. It lists one level, does no filtering or
-//! sorting, and uses neither rayon nor async.
+//! ## GUI-friendly [`DirEntry`] helpers
 //!
-//! ```no_run
-//! use std::path::Path;
-//! use swdir::scan_dir;
+//! [`DirEntry`] (the type returned by the scan functions) caches the
+//! entry's [`std::fs::FileType`], so `is_dir()` / `is_file()` /
+//! `is_symlink()` never re-syscall. 0.11 adds two thin convenience
+//! methods for tree widgets:
 //!
-//! # fn demo() -> Result<(), swdir::ScanError> {
-//! let entries = scan_dir(Path::new("."))?;
-//! for entry in entries {
-//!     if entry.is_dir() {
-//!         // expand on user click...
-//!     }
-//! }
-//! # Ok(()) }
-//! ```
+//! * [`DirEntry::display_name`] — borrowed `&OsStr` for labels
+//!   (no allocation).
+//! * [`DirEntry::relative_to`] — relativize against a cached root
+//!   (no I/O).
 //!
-//! ## Migration from 0.9
+//! ## Migration from 0.10
 //!
-//! 0.10 introduces a few deliberate breaks to unify filtering and
-//! surface partial failures. Rough map of the renames:
+//! 0.11 is additive on top of 0.10. Existing 0.10 code keeps working.
+//! Optional adjustments:
 //!
-//! | 0.9                                        | 0.10                                                    |
-//! |--------------------------------------------|---------------------------------------------------------|
-//! | `Swdir::default().set_root_path(p)`        | `Swdir::new().root_path(p)`                             |
-//! | `.set_recurse(Recurse { enabled, depth_limit })` | `.recurse(Recurse::None \| Recurse::Unlimited \| Recurse::Depth(n))` |
-//! | `.include_hidden()`                        | `.clear_filters()`  *(or drop `FilterRule::SkipHidden`)* |
-//! | `.set_extension_allowlist(&["md"])`        | `.filter(FilterRule::extension_allowlist(["md"])?)`     |
-//! | `.set_extension_denylist(&["md"])`         | `.filter(FilterRule::extension_denylist(["md"])?)`      |
-//! | `walk() -> DirNode`                        | `walk() -> WalkReport { tree, errors }` *(or `walk_tree()`)* |
-//! | stderr warnings on I/O failure             | `WalkReport::errors`                                    |
-//! | `SwdirError::DuplicateExtensionList`       | *(removed — allow/deny stack freely)*                   |
+//! * Pass [`SortOrder::Filesystem`] to [`Swdir::sort_order`] if you
+//!   want to skip the default in-memory sort.
+//! * Replace bespoke `strip_prefix(root).ok().map(..)` glue with
+//!   [`DirEntry::relative_to`].
+//! * Swap `scan_dir(path)` for `scan_dir_with_options(path,
+//!   &ScanOptions::default())` if you want sorted output instead of
+//!   raw OS order.
+//!
+//! See [CHANGELOG.md](https://github.com/nabbisen/swdir/blob/main/CHANGELOG.md)
+//! for the full list.
 
 mod core;
 mod helpers;
@@ -131,10 +187,11 @@ pub use crate::{
         error::SwdirError,
         recurse::Recurse,
         scan_error::ScanError,
+        sort::{ScanOptions, SortOrder},
         walk_error::WalkError,
         walk_report::WalkReport,
     },
-    scan::scan_dir,
+    scan::{scan_dir, scan_dir_with_options},
 };
 
 #[cfg(feature = "filter")]

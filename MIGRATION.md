@@ -1,5 +1,9 @@
 # Migration
 
+## Migrating from 0.10
+
+No behavioral breaks against 0.10.
+
 ## Migrating from 0.9
 
 0.10 breaks the `Swdir` API on purpose to unify filtering and make

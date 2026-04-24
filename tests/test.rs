@@ -10,7 +10,8 @@
 use std::path::PathBuf;
 
 use swdir::{
-    Decision, DirNodeCount, EntryKind, FilterRule, Recurse, Swdir, SwdirError, WalkReport,
+    Decision, DirNodeCount, EntryKind, FilterRule, Recurse, SortOrder, Swdir, SwdirError,
+    WalkReport,
 };
 
 // ---------------------------------------------------------------------------
@@ -356,4 +357,67 @@ fn count_sub_dir_included_ok() {
         .walk();
     let count = report.tree.count();
     assert_eq!(count, DirNodeCount { files: 4, dirs: 2 });
+}
+
+// ---------------------------------------------------------------------------
+// 0.11: SortOrder — walk-level ordering contract.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn sort_order_default_is_name_asc_dirs_first() {
+    // Default must be NameAscDirsFirst so GUI callers get reproducible
+    // output out of the box, matching 0.10's behavior.
+    let s = Swdir::new();
+    assert_eq!(s.sort_order_policy(), SortOrder::NameAscDirsFirst);
+}
+
+#[test]
+fn sort_order_name_asc_dirs_first_is_reproducible() {
+    // Running the same scan twice under NameAscDirsFirst must produce
+    // byte-identical trees — the core reproducibility guarantee for
+    // GUI widgets.
+    let build = || {
+        Swdir::new()
+            .root_path("tests/fixtures")
+            .recurse(Recurse::Depth(1))
+            .sort_order(SortOrder::NameAscDirsFirst)
+            .walk_tree()
+    };
+    let a = build();
+    let b = build();
+    assert_eq!(a.flatten_paths(), b.flatten_paths());
+
+    // And the order must actually be name-ascending within each bucket.
+    assert_eq!(
+        a.files,
+        vec![
+            PathBuf::from("tests/fixtures/test"),
+            PathBuf::from("tests/fixtures/test.md"),
+            PathBuf::from("tests/fixtures/test.txt"),
+        ],
+        "files must be name-ascending"
+    );
+}
+
+#[test]
+fn sort_order_filesystem_preserves_os_order() {
+    // We can't assert any specific OS order — that's the point of
+    // Filesystem — but we can assert the result set is the same as
+    // under NameAscDirsFirst (just possibly permuted).
+    use std::collections::BTreeSet;
+
+    let fs_tree = Swdir::new()
+        .root_path("tests/fixtures")
+        .recurse(Recurse::Depth(1))
+        .sort_order(SortOrder::Filesystem)
+        .walk_tree();
+    let name_tree = Swdir::new()
+        .root_path("tests/fixtures")
+        .recurse(Recurse::Depth(1))
+        .sort_order(SortOrder::NameAscDirsFirst)
+        .walk_tree();
+
+    let fs_set: BTreeSet<_> = fs_tree.flatten_paths().into_iter().collect();
+    let name_set: BTreeSet<_> = name_tree.flatten_paths().into_iter().collect();
+    assert_eq!(fs_set, name_set);
 }

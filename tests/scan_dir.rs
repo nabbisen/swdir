@@ -335,3 +335,210 @@ fn walk_still_works_alongside_scan_dir() {
     let entries = scan_dir(Path::new("tests/fixtures")).unwrap();
     assert!(!entries.is_empty());
 }
+
+// ---------------------------------------------------------------------------
+// 0.11: scan_dir_with_options — ordering contract.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn scan_dir_with_options_filesystem_has_same_set_as_scan_dir() {
+    // Filesystem order is unspecified, so we can only assert the set of
+    // entries matches what `scan_dir()` itself returns.
+    use swdir::{ScanOptions, SortOrder, scan_dir_with_options};
+
+    let tmp = TmpDir::new("scan-opts-fs");
+    tmp.touch("alpha");
+    tmp.touch("bravo");
+    tmp.mkdir("charlie");
+
+    let plain = scan_dir(tmp.path()).expect("scan_dir");
+    let with_opts = scan_dir_with_options(tmp.path(), &ScanOptions::new(SortOrder::Filesystem))
+        .expect("scan_dir_with_options");
+
+    assert_eq!(name_set(&plain), name_set(&with_opts));
+}
+
+#[test]
+fn scan_dir_with_options_name_asc_dirs_first_orders_correctly() {
+    use swdir::{ScanOptions, SortOrder, scan_dir_with_options};
+
+    // Mix dirs and files with names chosen so dir-vs-file order is the
+    // discriminant (alphabetically "f_*" < "z_dir"; grouping by kind
+    // must override that).
+    let tmp = TmpDir::new("scan-opts-nadf");
+    tmp.touch("f_apple");
+    tmp.touch("f_banana");
+    tmp.mkdir("z_dir");
+    tmp.mkdir("a_dir");
+
+    let entries = scan_dir_with_options(tmp.path(), &ScanOptions::new(SortOrder::NameAscDirsFirst))
+        .expect("scan_dir_with_options");
+
+    // Expect: [a_dir, z_dir, f_apple, f_banana]  — dirs first (A..Z),
+    // then files (A..Z). Neither group is interleaved.
+    let names: Vec<OsString> = entries.iter().map(|e| e.file_name()).collect();
+    assert_eq!(
+        names,
+        vec![
+            OsString::from("a_dir"),
+            OsString::from("z_dir"),
+            OsString::from("f_apple"),
+            OsString::from("f_banana"),
+        ]
+    );
+}
+
+#[test]
+fn scan_dir_with_options_default_is_name_asc_dirs_first() {
+    // The default value of ScanOptions must yield a deterministic order.
+    // We don't re-check the sort here (that's the test above) — just
+    // confirm the default enum variant.
+    use swdir::{ScanOptions, SortOrder};
+    assert_eq!(
+        ScanOptions::default().sort_order,
+        SortOrder::NameAscDirsFirst
+    );
+}
+
+#[test]
+fn scan_dir_with_options_is_reproducible() {
+    // Two consecutive calls under NameAscDirsFirst must return the same
+    // name sequence. Cornerstone guarantee for GUI rendering stability.
+    use swdir::{ScanOptions, scan_dir_with_options};
+
+    let tmp = TmpDir::new("scan-opts-repro");
+    for n in ["one", "two", "three", "four"] {
+        tmp.touch(n);
+    }
+    for n in ["DirA", "DirB"] {
+        tmp.mkdir(n);
+    }
+
+    let names_a: Vec<OsString> = scan_dir_with_options(tmp.path(), &ScanOptions::default())
+        .unwrap()
+        .iter()
+        .map(|e| e.file_name())
+        .collect();
+    let names_b: Vec<OsString> = scan_dir_with_options(tmp.path(), &ScanOptions::default())
+        .unwrap()
+        .iter()
+        .map(|e| e.file_name())
+        .collect();
+    assert_eq!(names_a, names_b);
+}
+
+// ---------------------------------------------------------------------------
+// 0.11: single-directory scope — spec requires `scan_dir` only sees one dir.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn scan_dir_only_sees_one_directory() {
+    // Build a tree with a child directory holding its own file. The
+    // top-level scan must list the child as a dir but must NOT return
+    // entries from inside it.
+    let tmp = TmpDir::new("one-level");
+    tmp.touch("top.txt");
+    let child = tmp.mkdir("child");
+    fs::write(child.join("nested.txt"), b"").expect("nested");
+
+    let entries = scan_dir(tmp.path()).expect("scan one-level");
+    let names = name_set(&entries);
+
+    assert!(names.contains(&OsString::from("top.txt")));
+    assert!(names.contains(&OsString::from("child")));
+    assert!(
+        !names.contains(&OsString::from("nested.txt")),
+        "scan_dir leaked nested content: {:?}",
+        names
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 0.11: DirEntry GUI helpers.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn dir_entry_display_name_borrows_and_no_alloc() {
+    // We can't prove "no allocation" in a test, but we CAN verify that
+    // the returned &OsStr points into the DirEntry (same lifetime as
+    // &self), which is the property that matters for GUIs.
+    let tmp = TmpDir::new("display-name");
+    tmp.touch("widget.rs");
+    let entries = scan_dir(tmp.path()).expect("scan");
+    let e = entries
+        .iter()
+        .find(|e| e.file_name() == "widget.rs")
+        .unwrap();
+    let borrowed: &std::ffi::OsStr = e.display_name();
+    assert_eq!(borrowed, std::ffi::OsStr::new("widget.rs"));
+}
+
+#[test]
+fn dir_entry_relative_to_strips_root_prefix() {
+    let tmp = TmpDir::new("relto-under");
+    tmp.touch("inner.txt");
+
+    let entries = scan_dir(tmp.path()).expect("scan");
+    let e = entries
+        .iter()
+        .find(|e| e.file_name() == "inner.txt")
+        .unwrap();
+
+    let rel = e.relative_to(tmp.path()).expect("under root");
+    assert!(rel.is_relative(), "relative path should be relative");
+    assert_eq!(rel, PathBuf::from("inner.txt"));
+}
+
+#[test]
+fn dir_entry_relative_to_returns_none_for_unrelated_root() {
+    let tmp = TmpDir::new("relto-outside");
+    tmp.touch("x");
+
+    let entries = scan_dir(tmp.path()).expect("scan");
+    let e = entries.iter().find(|e| e.file_name() == "x").unwrap();
+
+    // /nonexistent-prefix is not an ancestor of $TMPDIR
+    let rel = e.relative_to(Path::new("/nonexistent-prefix-xyz"));
+    assert!(rel.is_none(), "expected None, got {:?}", rel);
+}
+
+#[test]
+fn dir_entry_relative_to_does_no_io() {
+    // relative_to must be pure path arithmetic — it must not touch the
+    // filesystem. We prove this by feeding it a root that does not
+    // exist and confirming it still returns a path (so no error, no
+    // syscall). The entry's own path doesn't exist once the TmpDir is
+    // dropped, but we keep it alive for this test.
+    let tmp = TmpDir::new("relto-noio");
+    tmp.touch("a");
+    let entries = scan_dir(tmp.path()).expect("scan");
+    let e = entries.iter().find(|e| e.file_name() == "a").unwrap();
+
+    // Root path deliberately fictitious; still, if tmp.path() is a
+    // prefix of e.path(), relative_to returns Some. If we pass an
+    // unrelated fictitious root, it must return None without erroring.
+    let fake_root = Path::new("/nope/nope/nope-xyz");
+    assert!(e.relative_to(fake_root).is_none());
+}
+
+#[test]
+fn dir_entry_is_dir_uses_cached_file_type_no_extra_syscall() {
+    // Regression guard per spec: "GUI から使う際に余計な syscall を
+    // 増やさないこと". The `FileType` is captured at scan time, so
+    // deleting the file afterwards must not change what `is_dir()`
+    // reports (a fresh stat would fail or report differently).
+    let tmp = TmpDir::new("cached-ft");
+    let p = tmp.touch("to-delete");
+    let entries = scan_dir(tmp.path()).expect("scan");
+    let e = entries
+        .iter()
+        .find(|e| e.file_name() == "to-delete")
+        .unwrap();
+    assert!(e.is_file());
+
+    fs::remove_file(&p).expect("rm");
+
+    // After removal, a fresh stat would fail. Cached answer still fine.
+    assert!(e.is_file());
+    assert!(!e.is_dir());
+}

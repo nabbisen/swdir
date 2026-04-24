@@ -16,6 +16,7 @@ mod scan;
 
 use crate::helpers::dir_node::DirNode;
 use crate::helpers::recurse::Recurse;
+use crate::helpers::sort::SortOrder;
 use crate::helpers::walk_error::WalkError;
 use crate::helpers::walk_report::WalkReport;
 
@@ -32,6 +33,7 @@ pub struct Swdir {
     root_path: PathBuf,
     recurse: Recurse,
     max_threads: usize,
+    sort_order: SortOrder,
     #[cfg(feature = "filter")]
     filters: Vec<FilterRule>,
 }
@@ -43,6 +45,10 @@ impl Swdir {
     /// common case ("scan this tree, skip dotfiles") is a one-liner. To
     /// see hidden entries, call [`Swdir::clear_filters`] before — or
     /// instead of — adding your own.
+    ///
+    /// The default [`SortOrder`] is [`SortOrder::NameAscDirsFirst`],
+    /// matching the most common GUI expectation. Override with
+    /// [`Swdir::sort_order`].
     pub fn new() -> Self {
         #[cfg(feature = "filter")]
         {
@@ -50,6 +56,7 @@ impl Swdir {
                 root_path: PathBuf::from("."),
                 max_threads: MAX_THREADS,
                 recurse: Recurse::default(),
+                sort_order: SortOrder::default(),
                 filters: vec![FilterRule::SkipHidden],
             }
         }
@@ -59,6 +66,7 @@ impl Swdir {
                 root_path: PathBuf::from("."),
                 max_threads: MAX_THREADS,
                 recurse: Recurse::default(),
+                sort_order: SortOrder::default(),
             }
         }
     }
@@ -82,6 +90,17 @@ impl Swdir {
     /// storage and profiling shows it helps.
     pub fn max_threads(mut self, n: usize) -> Self {
         self.max_threads = n.max(1);
+        self
+    }
+
+    /// Choose the order of entries in the resulting [`WalkReport`].
+    ///
+    /// Two options, on purpose — see [`SortOrder`]. Defaults to
+    /// [`SortOrder::NameAscDirsFirst`]; pass [`SortOrder::Filesystem`]
+    /// when you want OS `readdir` order preserved (cheaper but
+    /// non-deterministic across runs / filesystems).
+    pub fn sort_order(mut self, order: SortOrder) -> Self {
+        self.sort_order = order;
         self
     }
 
@@ -119,6 +138,11 @@ impl Swdir {
     /// Borrow the current recursion policy.
     pub fn recurse_policy(&self) -> Recurse {
         self.recurse
+    }
+
+    /// Borrow the current sort-order policy.
+    pub fn sort_order_policy(&self) -> SortOrder {
+        self.sort_order
     }
 
     /// Run the scan and return a [`WalkReport`] carrying both the tree
