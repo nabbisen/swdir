@@ -4,7 +4,7 @@ version = "0.11.2"
 edition = "2024"
 
 description = "Swiftly traverse and scan directories. Sway 🪭, swing 🎷 or swim 🪼 in directories."
-authors = ["nabbisen <nabbisen@scqr.net>"]
+authors = ["nabbisen"]
 license = "Apache-2.0"
 
 categories = ["filesystem"]
